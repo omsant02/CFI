@@ -1,6 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 import HomeScreen from './components/HomeScreen';
+import ForeignerPage from './components/ForeignerPage';
+import QRScanner from './components/QRScanner';
+import PaymentConfirm from './components/PaymentConfirm';
+import ChatAgent from './components/ChatAgent';
 
 function App() {
   return (
@@ -8,8 +12,10 @@ function App() {
       <div className="fixed inset-0 bg-gray-900 overflow-hidden">
         <Routes>
           <Route path="/" element={<HomeScreen />} />
-          <Route path="/user" element={<div>User Page (Coming Soon)</div>} />
-          <Route path="/solver" element={<div>Solver Page (Coming Soon)</div>} />
+          <Route path="/user" element={<ForeignerPage />} />
+          <Route path="/scan-qr" element={<QRScanner />} />
+          <Route path="/payment-confirm" element={<PaymentConfirm />} />
+          <Route path="/chat-agent" element={<ChatAgent />} />
         </Routes>
       </div>
     </Router>

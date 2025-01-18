@@ -6,7 +6,15 @@ export default {
   ],
   theme: {
     extend: {
-      // Your custom theme extensions (if needed)
+      keyframes: {
+        scan: {
+          '0%': { transform: 'translateX(-50%) translateY(0)' },
+          '100%': { transform: 'translateX(-50%) translateY(100%)' }
+        }
+      },
+      animation: {
+        'scan': 'scan 2s linear infinite'
+      }
     },
   },
   plugins: [],
