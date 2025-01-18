@@ -1,11 +1,17 @@
-import './App.css'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import './App.css';
+import HomeScreen from './components/HomeScreen';
 
 function App() {
   return (
-    <>
-      <h1>winterhack</h1>
-    </>
-  )
+    <Router>
+      <Routes>
+        <Route path="/" element={<HomeScreen />} />
+        <Route path="/user" element={<div>User Page (Coming Soon)</div>} />
+        <Route path="/solver" element={<div>Solver Page (Coming Soon)</div>} />
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;
