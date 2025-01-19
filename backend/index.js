@@ -5,9 +5,12 @@ import dotenv from "dotenv"
 import userRoute from "./routes/userRoute.js"
 import intentRoute from "./routes/intentRoute.js"
 import quoteRoute from "./routes/quoteRoute.js"
+import cors from "cors";
 
 const app = express ();
 app.use(bodyParser.json());
+app.use(cors());
+
 
 dotenv.config();
 
