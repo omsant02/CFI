@@ -3,7 +3,6 @@ import './App.css';
 import HomeScreen from './components/HomeScreen';
 import ForeignerPage from './components/ForeignerPage';
 import QRScanner from './components/QRScanner';
-import PaymentConfirm from './components/PaymentConfirm';
 import ChatAgent from './components/ChatAgent';
 
 function App() {
@@ -14,7 +13,6 @@ function App() {
           <Route path="/" element={<HomeScreen />} />
           <Route path="/user" element={<ForeignerPage />} />
           <Route path="/scan-qr" element={<QRScanner />} />
-          <Route path="/payment-confirm" element={<PaymentConfirm />} />
           <Route path="/chat-agent" element={<ChatAgent />} />
         </Routes>
       </div>
