@@ -56,6 +56,7 @@ const Solver1Page: React.FC = () => {
         e.preventDefault(); // Prevent page reload
         console.log("Form Data:", formData); // You can use this data as needed
         const response = await createQuote({serialNo: 1, walletAddress: formData.name, price: formData.age});
+        console.log(response);
         setFormResult("Success");
       };
     
