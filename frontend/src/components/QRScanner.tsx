@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { QrReader } from 'react-qr-reader';
 import AmountInput from './AmountInput';
-import { QrCode, Camera } from 'lucide-react';
+import { QrCode } from 'lucide-react';
 
 const QRScanner: React.FC = () => {
   const [qrData, setQrData] = useState<string | null>(null);
@@ -12,10 +12,6 @@ const QRScanner: React.FC = () => {
       setQrData(result?.text);
       setShowAmountInput(true);
     }
-  };
-
-  const handleError = (error: any) => {
-    console.error(error);
   };
 
   const handleSubmit = (amount: number) => {

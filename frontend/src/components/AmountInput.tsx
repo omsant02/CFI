@@ -57,4 +57,3 @@ const AmountInput: React.FC<AmountInputProps> = ({ onSubmit }) => {
 };
 
 export default AmountInput;
-
