@@ -73,7 +73,7 @@ const Solver2Page: React.FC = () => {
     <div style={{ textAlign: "center", marginTop: "50px" }}>
       {/* Button and Output */}
       <button onClick={handleClick} style={{ padding: "10px 20px", fontSize: "16px" }}>
-        Click Me
+        Get Intent
       </button>
       {/* Display the result below the button */}
       {result && <p style={{ marginTop: "20px", fontSize: "18px", color: "blue" }}>{result}</p>}

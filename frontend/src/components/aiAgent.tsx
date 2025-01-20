@@ -1,9 +1,59 @@
 import { Groq } from 'groq-sdk';
 //import { provider, WALLET_ADDRESS, WALLET_PRIVATE_KEY, ETH_CONTRACT } from '../services/starknet';
-import { Account, uint256 } from 'starknet';
+
 import { type ChatCompletionMessageParam, type ChatCompletionTool } from 'groq-sdk/resources/chat/completions';
-import { create } from 'domain';
+
 import axios from "axios";
+
+import { connect } from "starknetkit"
+import { RpcProvider, cairo } from "starknet"
+import { InjectedConnector } from "starknetkit/injected"
+import { WebWalletConnector } from "starknetkit/webwallet"
+
+// ETH contract on Sepolia testnet
+const ETH_ADDRESS = "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7"
+
+// const [wallet, setWallet] = useState<any>(null)
+// const [address, setAddress] = useState<string>("")
+// const [transferAmount, setTransferAmount] = useState<string>("")
+// const [recipientAddress, setRecipientAddress] = useState<string>("")
+// const [loading, setLoading] = useState<boolean>(false)
+
+// const connectWallet = async () => {
+//   try {
+//     const result = await connect({
+//       modalMode: "alwaysAsk",
+//       modalTheme: "dark",
+//       connectors: [
+//         new InjectedConnector({ options: { id: "argentX", name: "Argent X" } }),
+//         new InjectedConnector({ options: { id: "braavos", name: "Braavos" } }),
+//         new WebWalletConnector({ url: "https://web.argent.xyz" }),
+//       ],
+//     })
+
+//     if (result && result.wallet) {
+//       console.log("Connected wallet:", result.wallet)
+//       setWallet(result.wallet)
+//       if (result.connectorData?.account) {
+//         setAddress(result.connectorData.account)
+//       }
+//     }
+//   } catch (error) {
+//     console.error("Error connecting wallet:", error)
+//   }
+// }
+
+// const disconnectWallet = async () => {
+//   try {
+//     await disconnect()
+//     setWallet(null)
+//     setAddress("")
+//   } catch (error) {
+//     console.error("Error disconnecting wallet:", error)
+//   }
+// }
+
+
 
 // require('dotenv').config();
 // import { Send } from './send';
@@ -66,7 +116,7 @@ async function createIntent(args: { tokenName: string, recipient: string, amount
 
 async function getQuote(args: { tokenName: string, recipient: string, amount: string, transactionHash: string }): Promise<string> {
     try {
-        console.log("called");
+        console.log(args.amount);
         //const serialNo = 1;
         const response = await axios.get(`http://localhost:3000/api/quote/getallquotes/1`);
         const result = response.data[0].price>response.data[1].price?response.data[1].price:response.data[0].price;
@@ -83,40 +133,59 @@ async function getQuote(args: { tokenName: string, recipient: string, amount: st
 }
 async function transferToken(args: { tokenName: string, recipient: string, amount: string, transactionHash: string }): Promise<string> {
     try {
-        console.log("called");
-        const amountInt = parseFloat(args.amount);
-        const amountBigint = BigInt(amountInt * 10 ** 18);
-        // Prepare transaction
-        // const account = new Account(provider, WALLET_ADDRESS, WALLET_PRIVATE_KEY);
-        // const amountUint256 = uint256.bnToUint256(amountBigint);
-        // console.log(amountUint256);
-        // const tx = await account.execute({
-        //     contractAddress: ETH_CONTRACT,
-        //     entrypoint: "transfer",
-        //     calldata: [
-        //         args.recipient,
-        //         amountUint256.low,
-        //         amountUint256.high
-        //     ]
-        // });
-
-        // Wait for transaction to be confirmed
-        //await provider.waitForTransaction(tx.transaction_hash);
- 
-
-        return `Transfered ${args.amount} ${args.tokenName} to ${args.recipient} with transaction Hash: `;
-        // let myMap = new Map<string, string>([
-        //     ["STRKBOT", "0x05ab9c6b81f1d1a7aac290940584a9d26c49ac1014097ef3bf11710445ebf285"]
-        // ]);
-        // const amountInt = parseInt(args.amount);
-        // const amountBigint = BigInt(amountInt * 10 ** 18);
-        // const tokenAddress = myMap.get(args.tokenName);
-        // if (!tokenAddress) {
-        //     return `Could not find token ${args.tokenName}`
-        // }
-        // await sendToken({ tokenAddress: tokenAddress, recipient: args.recipient, amount: amountBigint});
-
-        // return `Transfered ${args.amount} ${args.tokenName} to ${args.recipient}`;  
+        //await connectWallet();
+        const result = await connect({
+            modalMode: "alwaysAsk",
+            modalTheme: "dark",
+            connectors: [
+              new InjectedConnector({ options: { id: "argentX", name: "Argent X" } }),
+              new InjectedConnector({ options: { id: "braavos", name: "Braavos" } }),
+              new WebWalletConnector({ url: "https://web.argent.xyz" }),
+            ],
+          })
+      
+          if (result && result.wallet) {
+            console.log("Connected wallet:", result.wallet)
+            //setWallet(result.wallet)
+            if (result.connectorData?.account) {
+              //setAddress(result.connectorData.account)
+            }
+          }
+        //setAddress(args.recipient);
+        //setTransferAmount(args.amount);
+        //if (!wallet || !recipientAddress || !transferAmount || !address) return "unable to transfer";
+      
+        //setLoading(true)
+        try {
+          const amountInWei = cairo.uint256(BigInt(Number.parseFloat(args.amount) * Math.pow(10, 18)))
+      
+          const calls = [
+            {
+              contract_address: ETH_ADDRESS,
+              entry_point: "transfer",
+              calldata: [args.recipient, amountInWei.low.toString(), amountInWei.high.toString()],
+            },
+          ]
+      
+          if (!result.wallet) {
+            throw new Error("Wallet is not connected");
+          }
+          const result1 = await result.wallet.request({
+            type: "wallet_addInvokeTransaction",
+            params: { calls },
+          })
+      
+          console.log("Transaction submitted:", result1.transaction_hash)
+      
+          const provider = new RpcProvider({ nodeUrl: "https://free-rpc.nethermind.io/sepolia-juno/v0_7" })
+          await provider.waitForTransaction(result1.transaction_hash)
+      
+          console.log("Transaction completed!")
+          return `Transaction completed! with transaction hash: ${result1.transaction_hash}`;
+        } catch (error) {
+          console.error("Transfer failed:", error)
+          return "Transfer failed";
+        } 
     } catch {
         console.log("error");
         return JSON.stringify({ error: "Invalid prompt" });
