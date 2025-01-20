@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send } from 'lucide-react';
+import { runConversation } from './aiAgent';
 
 interface Message {
   type: 'user' | 'agent';
@@ -28,19 +29,25 @@ const ChatAgent: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
     // Add user message
     setMessages(prev => [...prev, { type: 'user', content: input }]);
 
     // Simulate agent response
-    setTimeout(() => {
+    // setTimeout(() => {
+    //   setMessages(prev => [...prev, {
+    //     type: 'agent',
+    //     content: "I'll help you process this payment. Can you please confirm the following details before we proceed?"
+    //   }]);
+    // }, 1000);
+    await runConversation(input).then((value) => {
+      //output = value;
       setMessages(prev => [...prev, {
         type: 'agent',
-        content: "I'll help you process this payment. Can you please confirm the following details before we proceed?"
-      }]);
-    }, 1000);
+        content: value }]);
+    })
 
     setInput('');
   };
