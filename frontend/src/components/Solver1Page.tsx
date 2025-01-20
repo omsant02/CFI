@@ -1,121 +1,242 @@
-import React, { useState } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
+import { RpcProvider, Contract, constants } from "starknet";
+import { connect, disconnect } from "starknetkit";
+import { InjectedConnector } from "starknetkit/injected";
+import { WebWalletConnector } from "starknetkit/webwallet";
 
-const Solver1Page: React.FC = () => {
-  // State to store the result
+// Contract ABI would be imported from your compiled contract
+const CONTRACT_ADDRESS = "0x";
+const ABI = []; // Your contract ABI
+
+const SolverPage: React.FC = () => {
   const [result, setResult] = useState<string>("");
-    // State to store form submission result
-    const [formResult, setFormResult] = useState<string>("");
+  const [formResult, setFormResult] = useState<string>("");
+  const [provider, setProvider] = useState<RpcProvider | null>(null);
+  const [contract, setContract] = useState<Contract | null>(null);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [connection, setConnection] = useState<any>(null);
 
-    // State to manage form inputs
-    const [formData, setFormData] = useState<{ name: string; age: number }>({
-      name: "",
-      age: 0,
-    });
+  const [formData, setFormData] = useState<{ name: string; amount: number }>({
+    name: "",
+    amount: 0,
+  });
 
-  const BASE_URL = "http://localhost:3000/api/intent"; // Replace with your server's base URL
+  const BASE_URL = "http://localhost:3000/api/intent";
 
-  // 3. Create a New Intent (POST with Body)
+  // Initialize provider and contract
+  useEffect(() => {
+    const initializeContract = async () => {
+      // Using Sepolia testnet as default
+      const provider = new RpcProvider({ 
+        nodeUrl: constants.NetworkName.SN_SEPOLIA 
+      });
+      
+      const { abi: contractAbi } = await provider.getClassAt(CONTRACT_ADDRESS);
+      if (!contractAbi) throw new Error("No ABI found for contract");
+      
+      const contract = new Contract(contractAbi, CONTRACT_ADDRESS, provider);
+      setProvider(provider);
+      setContract(contract);
+    };
+
+    initializeContract();
+  }, []);
+
+  // Connect wallet function with latest StarknetKit
+  const connectWallet = async () => {
+    try {
+      const connection = await connect({
+        connectors: [
+          new InjectedConnector({ options: { id: 'braavos' }}),
+          new InjectedConnector({ options: { id: 'argentX' }}),
+          new WebWalletConnector({ url: "https://web.argent.xyz" })
+        ],
+        modalMode: "alwaysAsk",
+        modalTheme: "light"
+      });
+      
+      if (connection && connection.wallet) {
+        setConnection(connection.wallet);
+        // setWalletAddress(connection.wallet.selectedAddress);
+      }
+    } catch (error) {
+      console.error("Error connecting wallet:", error);
+    }
+  };
+
+  // Disconnect wallet function
+  const disconnectWallet = async () => {
+    try {
+      await disconnect();
+      setConnection(null);
+      setWalletAddress(null);
+    } catch (error) {
+      console.error("Error disconnecting wallet:", error);
+    }
+  };
+
   const getIntent = async (serialNo: number) => {
     try {
-      //console.log("Creating Intent:", intentData);
-        const response = await axios.get(`${BASE_URL}/getintent/${serialNo}`);
-        console.log("Intent Created:", response.data);
-        return JSON.stringify(response.data);
+      const response = await fetch(`${BASE_URL}/getintent/${serialNo}`);
+      const data = await response.json();
+      console.log("Intent Data:", data);
+      return data;
     } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-            console.error("Error creating intent:", error.response.data);
-        } else {
-            console.error("Error creating intent:", error);
-        }
-    }
-  };
-  
-  const createQuote = async (quoteData: { serialNo: number; walletAddress: string | null; price: number }) => {
-    try {
-        const response = await axios.post(`http://localhost:3000/api/quote/create`, quoteData);
-        console.log("Intent Created:", response.status);
-    } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-            console.error("Error creating intent:", error.response.data);
-        } else {
-            console.error("Error creating intent:", error);
-        }
+      console.error("Error fetching intent:", error);
+      throw error;
     }
   };
 
-  // Function to handle button click
+  // const createQuote = async (quoteData: { 
+  //   serialNo: number; 
+  //   walletAddress: string | null; 
+  //   price: number 
+  // }) => {
+  //   try {
+  //     if (!contract || !connection) {
+  //       throw new Error("Contract or wallet not initialized");
+  //     }
+
+  //     // Get intent data for validation
+  //     const intentData = await getIntent(quoteData.serialNo);
+  //     const intentAmount = intentData.amount;
+
+  //     // Update contract connection with wallet
+  //     contract.connect(connection);
+
+  //     // Validate quote
+  //     const isValid = await contract.validate_quote(intentAmount, quoteData.price);
+  //     if (!isValid) {
+  //       throw new Error("Quote exceeds maximum allowed markup (1.4x)");
+  //     }
+
+  //     const tokenAmount = await contract.get_token_equivalent(quoteData.price);
+  //     console.log("Token amount required:", tokenAmount);
+
+  //     const response = await fetch(`${BASE_URL}/quote/create`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json'
+  //       },
+  //       body: JSON.stringify({
+  //         ...quoteData,
+  //         tokenAmount,
+  //       })
+  //     });
+
+  //     return response.json();
+  //   } catch (error) {
+  //     console.error("Error in quote creation:", error);
+  //     throw error;
+  //   }
+  // };
+
   const handleClick = async () => {
-    const serialNo = 1; // Replace with the actual serial number you want to use
-    const newResult = await getIntent(serialNo); // Your logic can go here
-    setResult(newResult || ""); // Update the result state
+    try {
+      const serialNo = 1;
+      const intentData = await getIntent(serialNo);
+      setResult(JSON.stringify(intentData));
+    } catch (error) {
+      console.error("Error:", error);
+    }
   };
 
-    // Function to handle form submission
-    const handleFormSubmit = async (e: React.FormEvent) => {
-        e.preventDefault(); // Prevent page reload
-        console.log("Form Data:", formData); // You can use this data as needed
-        const response = await createQuote({serialNo: 1, walletAddress: formData.name, price: formData.age});
-        console.log(response);
-        setFormResult("Success");
-      };
-    
-      // Function to handle form input changes
-      const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData((prevData) => ({
-          ...prevData,
-          [name]: name === "age" ? parseInt(value) || 0 : value,
-        }));
-      };
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (!walletAddress) {
+        await connectWallet();
+        return;
+      }
+
+      setFormResult("Processing...");
+
+      // const response = await createQuote({
+      //   serialNo: 1,
+      //   walletAddress: walletAddress,
+      //   price: formData.amount,
+      // });
+
+      setFormResult("Quote created successfully! Waiting for acceptance...");
+    } catch (error: any) {
+      setFormResult(`Error: ${error.message}`);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: name === "amount" ? parseInt(value) || 0 : value,
+    }));
+  };
 
   return (
-    <div style={{ textAlign: "center", marginTop: "50px" }}>
-      {/* Button and Output */}
-      <button onClick={handleClick} style={{ padding: "10px 20px", fontSize: "16px" }}>
+    <div className="text-center mt-12">
+      <button 
+        onClick={walletAddress ? disconnectWallet : connectWallet} 
+        className="px-5 py-2.5 text-base mb-5"
+      >
+        {walletAddress ? `Disconnect ${walletAddress.slice(0, 6)}...` : "Connect Wallet"}
+      </button>
+
+      <button 
+        onClick={handleClick} 
+        className="px-5 py-2.5 text-base ml-2.5"
+      >
         Get Intent
       </button>
-      {/* Display the result below the button */}
-      {result && <p style={{ marginTop: "20px", fontSize: "18px", color: "blue" }}>{result}</p>}
-   
 
-      {/* Form */}
-      <form onSubmit={handleFormSubmit} style={{ marginTop: "30px" }}>
-        <div style={{ marginBottom: "10px" }}>
+      {result && (
+        <div className="mt-5 text-lg text-blue-600">
+          <pre>{result}</pre>
+        </div>
+      )}
+
+      <form onSubmit={handleFormSubmit} className="mt-8">
+        <div className="mb-2.5">
           <label>
-            Wallet Address (String):
+            Your Wallet Address:
             <input
               type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              style={{ marginLeft: "10px", padding: "5px", fontSize: "16px" }}
+              value={walletAddress || ""}
+              disabled
+              className="ml-2.5 p-1.5 text-base w-96"
             />
           </label>
         </div>
-        <div style={{ marginBottom: "10px" }}>
+        <div className="mb-2.5">
           <label>
-            Amount (Number):
+            Quote Amount (INR):
             <input
               type="number"
-              name="age"
-              value={formData.age || ""}
+              name="amount"
+              value={formData.amount || ""}
               onChange={handleInputChange}
-              style={{ marginLeft: "10px", padding: "5px", fontSize: "16px" }}
+              className="ml-2.5 p-1.5 text-base"
             />
           </label>
         </div>
-        <button type="submit" style={{ padding: "10px 20px", fontSize: "16px" }}>
-          Submit
+        <button 
+          type="submit" 
+          className="px-5 py-2.5 text-base"
+          disabled={!walletAddress}
+        >
+          Submit Quote
         </button>
       </form>
 
-      {/* Form Submission Result */}
       {formResult && (
-        <p style={{ marginTop: "20px", fontSize: "18px", color: "green" }}>{formResult}</p>
+        <div 
+          className={`mt-5 text-lg ${
+            formResult.includes("Error") ? "text-red-600" : "text-green-600"
+          }`}
+        >
+          {formResult}
+        </div>
       )}
     </div>
   );
 };
 
-export default Solver1Page;
+export default SolverPage;
