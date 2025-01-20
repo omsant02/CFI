@@ -110,7 +110,3 @@ StarkFPI solves a crucial problem for foreign travelers in India who want to use
   * Smart contract development
   * AI agent implementation
   * ZK proof integration
-
-## 🏆 Hackathon Project
-
-This project was developed for the Starknet Winter Hackathon (January 2025), demonstrating innovative use of Starknet technology for real-world payment solutions.
